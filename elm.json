@@ -2,7 +2,7 @@
     "type": "package",
     "name": "noahzgordon/elm-color-extra",
     "summary": "Additional color handling for Elm",
-    "license": "BSD-3-Clause",
+    "license": "MIT",
     "version": "1.0.0",
     "exposed-modules": [
         "Color.Accessibility",
