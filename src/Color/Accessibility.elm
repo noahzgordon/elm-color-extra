@@ -54,18 +54,14 @@ luminance : Color -> Float
 luminance cl =
     let
         ( r, g, b ) =
-            cl |> toRgb |> (\a -> ( f a.red, f a.green, f a.blue ))
+            cl |> toRgba |> (\a -> ( f a.red, f a.green, f a.blue ))
 
         f intensity =
-            let
-                srgb =
-                    toFloat intensity / 255
-            in
-            if srgb <= 0.03928 then
-                srgb / 12.92
+            if intensity <= 0.03928 then
+                intensity / 12.92
 
             else
-                ((srgb + 0.055) / 1.055) ^ 2.4
+                ((intensity + 0.055) / 1.055) ^ 2.4
     in
     0.2126 * r + 0.7152 * g + 0.0722 * b
 

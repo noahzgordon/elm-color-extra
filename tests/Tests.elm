@@ -1,13 +1,13 @@
-module Tests exposing (..)
+module Tests exposing (accessibility, blending, c1, c2, convert, gradient, interpolation, lab1, manipulate, p1, p1Result, p2, p2Result)
 
-import Color exposing (Color, hsl, hsla, rgb, rgba)
+import Color exposing (Color, hsl, hsla, rgb, rgba, toRgba)
 import Color.Accessibility exposing (..)
 import Color.Blending as Ble exposing (..)
 import Color.Convert exposing (..)
 import Color.Gradient as Gra exposing (..)
 import Color.Interpolate as Int exposing (..)
 import Color.Manipulate as Man exposing (..)
-import Expect
+import Expect exposing (Expectation, FloatingPointTolerance(..))
 import Test exposing (..)
 
 
@@ -16,27 +16,27 @@ accessibility =
     describe "Accessibility"
         [ test "Contrast ratio of black and white should be 21:1" <|
             \() ->
-                Expect.equal
+                Expect.within (Absolute 0.001)
                     (contrastRatio Color.black Color.white)
                     21.0
         , test "Contrast ratio of equal colors should be 1:1" <|
             \() ->
-                Expect.equal
+                Expect.within (Absolute 0.001)
                     (contrastRatio Color.blue Color.blue)
                     1.0
         , test "Contrast ratio color order does not matter" <|
             \() ->
-                Expect.equal
+                Expect.within (Absolute 0.001)
                     (contrastRatio Color.green Color.blue)
                     (contrastRatio Color.blue Color.green)
         , test "Luminance of black is the minimum possible" <|
             \() ->
-                Expect.equal
+                Expect.within (Absolute 0.001)
                     (luminance Color.black)
                     0.0
         , test "Luminance of white is the maximum possible" <|
             \() ->
-                Expect.equal
+                Expect.within (Absolute 0.001)
                     (luminance Color.white)
                     1.0
         , test "Maximum contrast" <|
@@ -60,9 +60,9 @@ convert =
         , test "Color to rgba String" <|
             \() -> Expect.equal (colorToCssRgba (rgba 255 125 0 0.3)) "rgba(255, 125, 0, 0.3)"
         , test "Color to hsl String" <|
-            \() -> Expect.equal (colorToCssHsl (hsl 0.4 0.2 0)) "hsl(23, 20%, 0%)"
+            \() -> Expect.equal (colorToCssHsl (hsl 0.4 0.2 0.2)) "hsl(144, 20%, 20%)"
         , test "Color to hsla String" <|
-            \() -> Expect.equal (colorToCssHsla (hsla 0.4 0.2 0 1)) "hsla(23, 20%, 0%, 1)"
+            \() -> Expect.equal (colorToCssHsla (hsla 0.4 0.2 0.2 1)) "hsla(144, 20%, 20%, 1)"
         , test "Color to hex String" <|
             \() -> Expect.equal (colorToHex (rgb 255 0 255)) "#ff00ff"
         , test "Color to hex String ignores alpha" <|
@@ -94,7 +94,7 @@ convert =
         , test "Rgb to lab" <|
             \() -> Expect.equal lab1 (colorToLab (rgb 255 255 0))
         , test "Lab to rgb" <|
-            \() -> Expect.equal (rgb 255 255 0) (labToColor lab1)
+            expectColorSimilarity (rgb 255 255 0) (labToColor lab1)
         ]
 
 
@@ -107,55 +107,69 @@ manipulate : Test
 manipulate =
     describe "Manipulate"
         [ test "Darken" <|
-            \() -> Expect.equal (Man.darken 0.5 (hsl 1 1 1)) (hsl 1 1 0.5)
+            expectColorSimilarity (Man.darken 0.5 (hsl 1 1 0.75)) (hsl 1 1 0.25)
         , test "Darken should be limit to 0" <|
-            \() -> Expect.equal (Man.darken 10 (hsl 1 1 1)) (hsl 1 1 0)
+            expectColorSimilarity (Man.darken 10 (hsl 1 1 0.75)) (hsl 1 1 0)
         , test "Lighten" <|
-            \() -> Expect.equal (Man.lighten 0.5 (hsl 1 1 0.2)) (hsl 1 1 0.7)
+            expectColorSimilarity (Man.lighten 0.5 (hsl 1 1 0.2)) (hsl 1 1 0.7)
         , test "Lighten should be limit to 1" <|
-            \() -> Expect.equal (Man.lighten 10 (hsl 1 1 0)) (hsl 1 1 1)
+            expectColorSimilarity (Man.lighten 10 (hsl 1 1 0)) (hsl 1 1 1)
         , test "Saturate" <|
-            \() -> Expect.equal (saturate 0.5 (hsl 1 0 1)) (hsl 1 0.5 1)
+            expectColorSimilarity (saturate 0.5 (hsl 1 0 1)) (hsl 1 0.5 1)
         , test "Saturate should be limit to 1" <|
-            \() -> Expect.equal (saturate 10 (hsl 1 1 1)) (hsl 1 1 1)
+            expectColorSimilarity (saturate 10 (hsl 1 1 1)) (hsl 1 1 1)
         , test "Desaturate" <|
-            \() -> Expect.equal (desaturate 0.5 (hsl 1 1 1)) (hsl 1 0.5 1)
+            expectColorSimilarity (desaturate 0.5 (hsl 1 1 1)) (hsl 1 0.5 1)
         , test "Desaturate should be limit to 0" <|
-            \() -> Expect.equal (desaturate 10 (hsl 1 1 1)) (hsl 1 0 1)
+            expectColorSimilarity (desaturate 10 (hsl 1 1 1)) (hsl 1 0 1)
         , test "Grayscale" <|
-            \() -> Expect.equal (Man.grayscale (hsl 1 1 1)) (hsl 1 0 1)
+            expectColorSimilarity (Man.grayscale (hsl 1 1 1)) (hsl 1 0 1)
         , test "Fade in" <|
-            \() -> Expect.equal (fadeIn 0.2 (hsla 1 1 1 0.5)) (hsla 1 1 1 0.7)
+            expectColorSimilarity (fadeIn 0.2 (hsla 1 1 1 0.5)) (hsla 1 1 1 0.7)
         , test "Fade in should be limit to 1" <|
-            \() -> Expect.equal (fadeIn 10 (hsla 1 1 1 0.5)) (hsla 1 1 1 1)
+            expectColorSimilarity (fadeIn 10 (hsla 1 1 1 0.5)) (hsla 1 1 1 1)
         , test "Fade out" <|
-            \() -> Expect.equal (fadeOut 0.2 (hsla 1 1 1 0.5)) (hsla 1 1 1 0.3)
+            expectColorSimilarity (fadeOut 0.2 (hsla 1 1 1 0.5)) (hsla 1 1 1 0.3)
         , test "Fade out should be limit to 0" <|
-            \() -> Expect.equal (fadeOut 10 (hsla 1 1 1 0.5)) (hsla 1 1 1 0)
+            expectColorSimilarity (fadeOut 10 (hsla 1 1 1 0.5)) (hsla 1 1 1 0)
         , test "Rotate hue" <|
-            \() -> Expect.equal (rotateHue 90 (hsla 0 1 1 0)) (hsla (degrees 90) 1 1 0)
+            expectColorSimilarity (rotateHue 90 (hsla 0 1 1 0)) (hsla (degrees 90) 1 1 0)
         , test "Rotate hue with negative value" <|
-            \() -> Expect.equal (rotateHue -90 (hsla 0 1 1 0)) (hsla (degrees 270) 1 1 0)
-        , test "Rotate hue for more then 360°" <| \() -> Expect.equal (rotateHue 270 (hsla (degrees 180) 1 1 0)) (hsla (degrees 90) 1 1 0)
-        , test "Scale saturation with positive value" <| \() -> Expect.equal (hsl (degrees 120) 0.51 0.9) (scaleHsl ( 0.3, 0, 0 ) (hsl (degrees 120) 0.3 0.9))
-        , test "Scale saturation with negative value" <| \() -> Expect.equal (hsl (degrees 120) 0.21 0.9) (scaleHsl ( -0.3, 0, 0 ) (hsl (degrees 120) 0.3 0.9))
-        , test "Scale lightness with positive value" <| \() -> Expect.equal (hsl (degrees 120) 0.3 0.915) (scaleHsl ( 0, 0.15, 0 ) (hsl (degrees 120) 0.3 0.9))
-        , test "Scale lightness with negative value" <| \() -> Expect.equal (hsl (degrees 120) 0.3 0.765) (scaleHsl ( 0, -0.15, 0 ) (hsl (degrees 120) 0.3 0.9))
-        , test "Scale alpha with positive value" <| \() -> Expect.equal (hsla (degrees 120) 0.3 0.9 0.14) (scaleHsl ( 0, 0, 0.14 ) (hsla (degrees 120) 0.3 0.9 0))
-        , test "Scale alpha with negative value" <| \() -> Expect.equal (hsla (degrees 120) 0.3 0.9 0.86) (scaleHsl ( 0, 0, -0.14 ) (hsl (degrees 120) 0.3 0.9))
-        , test "Scale red channel with positive value" <| \() -> Expect.equal (rgb 186 20 30) (scaleRgb ( 0.3, 0, 0, 0 ) (rgb 157 20 30))
-        , test "Scale red channel with negative value" <| \() -> Expect.equal (rgb 110 20 30) (scaleRgb ( -0.3, 0, 0, 0 ) (rgb 157 20 30))
-        , test "Scale green channel with positive value" <| \() -> Expect.equal (rgb 157 55 30) (scaleRgb ( 0, 0.15, 0, 0 ) (rgb 157 20 30))
-        , test "Scale green channel with negative value" <| \() -> Expect.equal (rgb 157 17 30) (scaleRgb ( 0, -0.15, 0, 0 ) (rgb 157 20 30))
-        , test "Scale blue channel with positive value" <| \() -> Expect.equal (rgb 157 20 62) (scaleRgb ( 0, 0, 0.14, 0 ) (rgb 157 20 30))
-        , test "Scale blue channel with negative value" <| \() -> Expect.equal (rgb 157 20 26) (scaleRgb ( 0, 0, -0.14, 0 ) (rgb 157 20 30))
-        , test "Scale alpha channel with positive value" <| \() -> Expect.equal (rgba 157 20 30 0.6) (scaleRgb ( 0, 0, 0, 0.2 ) (rgba 157 20 30 0.5))
-        , test "Scale alpha channel with negative value" <| \() -> Expect.equal (rgba 157 20 30 0.4) (scaleRgb ( 0, 0, 0, -0.2 ) (rgba 157 20 30 0.5))
-        , test "Mix 1" <| \() -> Expect.equal (rgb 128 0 128) (mix (rgb 255 0 0) (rgb 0 0 255))
-        , test "Mix 2" <| \() -> Expect.equal (rgb 128 128 128) (mix (rgb 255 255 0) (rgb 0 0 255))
-        , test "Mix 3" <| \() -> Expect.equal (rgb 128 145 85) (mix (rgb 255 119 0) (rgb 0 170 170))
-        , test "Mix 4" <| \() -> Expect.equal (rgb 64 0 191) (weightedMix (rgb 255 0 0) (rgb 0 0 255) 0.25)
-        , test "Mix 5" <| \() -> Expect.equal (rgba 64 0 191 0.75) (mix (rgba 255 0 0 0.5) (rgb 0 0 255))
+            expectColorSimilarity (rotateHue -90 (hsla 0 1 1 0)) (hsla (degrees 270) 1 1 0)
+        , test "Rotate hue for more then 360°" <|
+            expectColorSimilarity (rotateHue 270 (hsla (degrees 180) 1 1 0))
+                (hsla (degrees 90) 1 1 0)
+        , test "Scale saturation with positive value" <|
+            expectColorSimilarity (hsl (1 / 3) 0.51 0.9)
+                (scaleHsl { saturationScale = 0.3, lightnessScale = 0, alphaScale = 0 } (hsl (1 / 3) 0.3 0.9))
+        , test "Scale saturation with negative value" <|
+            expectColorSimilarity (hsl (1 / 3) 0.21 0.9)
+                (scaleHsl { saturationScale = -0.3, lightnessScale = 0, alphaScale = 0 } (hsl (1 / 3) 0.3 0.9))
+        , test "Scale lightness with positive value" <|
+            expectColorSimilarity (hsl (1 / 3) 0.3 0.915)
+                (scaleHsl { saturationScale = 0, lightnessScale = 0.15, alphaScale = 0 } (hsl (1 / 3) 0.3 0.9))
+        , test "Scale lightness with negative value" <|
+            expectColorSimilarity (hsl (1 / 3) 0.3 0.765)
+                (scaleHsl { saturationScale = 0, lightnessScale = -0.15, alphaScale = 0 } (hsl (1 / 3) 0.3 0.9))
+        , test "Scale alpha with positive value" <|
+            expectColorSimilarity (hsla (1 / 3) 0.3 0.9 0.14)
+                (scaleHsl { saturationScale = 0, lightnessScale = 0, alphaScale = 0.14 } (hsla (1 / 3) 0.3 0.9 0))
+        , test "Scale alpha with negative value" <|
+            expectColorSimilarity (hsla (1 / 3) 0.3 0.9 0.86)
+                (scaleHsl { saturationScale = 0, lightnessScale = 0, alphaScale = -0.14 } (hsl (1 / 3) 0.3 0.9))
+        , test "Scale red channel with positive value" <| \() -> Expect.equal (rgb 186.4 20 30) (scaleRgb { redScale = 0.3, greenScale = 0, blueScale = 0, alphaScale = 0 } (rgb 157 20 30))
+        , test "Scale red channel with negative value" <| \() -> Expect.equal (rgb 109.9 20 30) (scaleRgb { redScale = -0.3, greenScale = 0, blueScale = 0, alphaScale = 0 } (rgb 157 20 30))
+        , test "Scale green channel with positive value" <| \() -> Expect.equal (rgb 157 55.25 30) (scaleRgb { redScale = 0, greenScale = 0.15, blueScale = 0, alphaScale = 0 } (rgb 157 20 30))
+        , test "Scale green channel with negative value" <| \() -> Expect.equal (rgb 157 17 30) (scaleRgb { redScale = 0, greenScale = -0.15, blueScale = 0, alphaScale = 0 } (rgb 157 20 30))
+        , test "Scale blue channel with positive value" <| \() -> Expect.equal (rgb 157 20 61.5) (scaleRgb { redScale = 0, greenScale = 0, blueScale = 0.14, alphaScale = 0 } (rgb 157 20 30))
+        , test "Scale blue channel with negative value" <| \() -> Expect.equal (rgb 157 20 25.8) (scaleRgb { redScale = 0, greenScale = 0, blueScale = -0.14, alphaScale = 0 } (rgb 157 20 30))
+        , test "Scale alpha channel with positive value" <| \() -> Expect.equal (rgba 157 20 30 0.6) (scaleRgb { redScale = 0, greenScale = 0, blueScale = 0, alphaScale = 0.2 } (rgba 157 20 30 0.5))
+        , test "Scale alpha channel with negative value" <| \() -> Expect.equal (rgba 157 20 30 0.4) (scaleRgb { redScale = 0, greenScale = 0, blueScale = 0, alphaScale = -0.2 } (rgba 157 20 30 0.5))
+        , test "Mix 1" <| \() -> Expect.equal (rgb 127.5 0 127.5) (mix (rgb 255 0 0) (rgb 0 0 255))
+        , test "Mix 2" <| \() -> Expect.equal (rgb 127.5 127.5 127.5) (mix (rgb 255 255 0) (rgb 0 0 255))
+        , test "Mix 3" <| \() -> Expect.equal (rgb 127.5 144.5 85) (mix (rgb 255 119 0) (rgb 0 170 170))
+        , test "Mix 4" <| \() -> Expect.equal (rgb 63.75 0 191.25) (weightedMix (rgb 255 0 0) (rgb 0 0 255) 0.25)
+        , test "Mix 5" <| \() -> Expect.equal (rgba 63.75 0 191.25 0.75) (mix (rgba 255 0 0 0.5) (rgb 0 0 255))
         , test "Mix 6" <| \() -> Expect.equal (rgb 255 0 0) (weightedMix (rgb 255 0 0) (rgb 0 0 255) 1)
         , test "Mix 7" <| \() -> Expect.equal (rgb 0 0 255) (weightedMix (rgb 255 0 0) (rgb 0 0 255) 0)
         , test "Mix 8" <| \() -> Expect.equal (rgba 255 0 0 0.5) (mix (rgb 255 0 0) (rgba 0 0 255 0))
@@ -165,6 +179,21 @@ manipulate =
         , test "Mix 12" <| \() -> Expect.equal (rgba 0 0 255 0) (weightedMix (rgb 255 0 0) (rgba 0 0 255 0) 0)
         , test "Mix 13" <| \() -> Expect.equal (rgba 255 0 0 0) (weightedMix (rgba 255 0 0 0) (rgb 0 0 255) 1)
         ]
+
+
+expectColorSimilarity : Color -> Color -> (() -> Expectation)
+expectColorSimilarity color1 color2 =
+    let
+        color1Rgb =
+            toRgba color1
+
+        color2Rgb =
+            toRgba color2
+
+        compare a b fn =
+            \_ -> Expect.within (Absolute 0.01) (fn a) (fn b)
+    in
+    Expect.all (List.map (compare color1Rgb color2Rgb) [ .red, .green, .blue, .alpha ])
 
 
 c1 : Color
@@ -180,22 +209,22 @@ c2 =
 blending : Test
 blending =
     describe "Blending"
-        [ test "Multiply" <| \() -> Expect.equal (multiply c1 c2) (rgb 0 102 0)
-        , test "Screen" <| \() -> Expect.equal (screen c1 c2) (rgb 255 255 0)
-        , test "Overlay" <| \() -> Expect.equal (overlay c1 c2) (rgb 255 204 0)
-        , test "Softlight" <| \() -> Expect.equal (softlight c1 c2) (rgb 255 161 0)
-        , test "Hardlight" <| \() -> Expect.equal (hardlight c1 c2) c2
-        , test "Difference" <| \() -> Expect.equal (difference c1 c2) (rgb 255 153 0)
-        , test "Exclusion" <| \() -> Expect.equal (exclusion c1 c2) (rgb 255 153 0)
-        , test "Darken" <| \() -> Expect.equal (Ble.darken c1 c2) (rgb 0 102 0)
-        , test "Lighten" <| \() -> Expect.equal (Ble.lighten c1 c2) (rgb 255 255 0)
+        [ test "Multiply" <| expectColorSimilarity (multiply c1 c2) (rgb 0 102 0)
+        , test "Screen" <| expectColorSimilarity (screen c1 c2) (rgb 255 255 0)
+        , test "Overlay" <| expectColorSimilarity (overlay c1 c2) (rgb 255 204 0)
+        , test "Softlight" <| expectColorSimilarity (softlight c1 c2) (rgb 255 161.27 0)
+        , test "Hardlight" <| expectColorSimilarity (hardlight c1 c2) c2
+        , test "Difference" <| expectColorSimilarity (difference c1 c2) (rgb 255 153 0)
+        , test "Exclusion" <| expectColorSimilarity (exclusion c1 c2) (rgb 255 153 0)
+        , test "Darken" <| expectColorSimilarity (Ble.darken c1 c2) (rgb 0 102 0)
+        , test "Lighten" <| expectColorSimilarity (Ble.lighten c1 c2) (rgb 255 255 0)
         ]
 
 
 interpolation : Test
 interpolation =
     describe "Interpolate"
-        [ test "Mix" <| \() -> Expect.equal (interpolate RGB (rgba 0 0 0 0) (rgba 255 255 255 1) 0.5) (rgba 128 128 128 0.5)
+        [ test "Mix" <| \() -> Expect.equal (interpolate RGB (rgba 0 0 0 0) (rgba 255 255 255 1) 0.5) (rgba 127.5 127.5 127.5 0.5)
         ]
 
 
@@ -240,16 +269,4 @@ gradient =
     describe "Gradient"
         [ test "Gradient from list" <| \() -> Expect.equal (Gra.linearGradient RGB p1 5) p1Result
         , test "Gradient from stops" <| \() -> Expect.equal (Gra.linearGradientFromStops RGB p2 5) p2Result
-        ]
-
-
-all : Test
-all =
-    describe "All tests"
-        [ accessibility
-        , convert
-        , manipulate
-        , blending
-        , gradient
-        , interpolation
         ]

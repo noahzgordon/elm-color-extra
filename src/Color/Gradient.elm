@@ -33,6 +33,14 @@ type alias Gradient =
     List GradientStop
 
 
+type alias GradientInfo =
+    { stop1 : GradientStop
+    , stop2 : GradientStop
+    , gradient : Gradient
+    , palette : Palette
+    }
+
+
 {-| Create a new `Palette` with gradient colors from a given `Palette`,
 with a given size.
 
@@ -86,7 +94,7 @@ linearGradientFromStops space stops size =
                 l =
                     size - 1
 
-                stops =
+                stops_ =
                     List.range 0 l |> List.map (\i -> toFloat i / toFloat l)
 
                 currentStops =
@@ -95,24 +103,24 @@ linearGradientFromStops space stops size =
                 ( s2, g ) =
                     getNextGradientStop s1 currentStops
             in
-            List.foldl (c space) ( s1, s2, g, [] ) stops
-                |> (\( _, _, _, p ) -> p)
+            List.foldl (adjustGradient space) { stop1 = s1, stop2 = s2, gradient = g, palette = [] } stops_
+                |> (\{ palette } -> palette)
                 |> List.reverse
 
         Nothing ->
             []
 
 
-c : Space -> Float -> ( GradientStop, GradientStop, Gradient, Palette ) -> ( GradientStop, GradientStop, Gradient, Palette )
-c space t ( stop1, stop2, gradient, palette ) =
+adjustGradient : Space -> Float -> GradientInfo -> GradientInfo
+adjustGradient space t { stop1, stop2, gradient, palette } =
     let
-        ( stop1_, stop2_, gradient_, color ) =
+        newInfo =
             calculateGradient space stop1 stop2 gradient t
     in
-    ( stop1_, stop2_, gradient_, color :: palette )
+    { stop1 = newInfo.stop1, stop2 = newInfo.stop2, gradient = newInfo.gradient, palette = newInfo.palette ++ palette }
 
 
-calculateGradient : Space -> GradientStop -> GradientStop -> Gradient -> Float -> ( GradientStop, GradientStop, Gradient, Color )
+calculateGradient : Space -> GradientStop -> GradientStop -> Gradient -> Float -> GradientInfo
 calculateGradient space stop1 stop2 gradient t =
     if first stop2 < t then
         let
@@ -122,10 +130,10 @@ calculateGradient space stop1 stop2 gradient t =
             ( stop2_, gradient_ ) =
                 getNextGradientStop stop2 gradient
         in
-        ( stop1_, stop2_, gradient_, calculateColor space stop1_ stop2_ t )
+        { stop1 = stop1_, stop2 = stop2_, gradient = gradient_, palette = [ calculateColor space stop1_ stop2_ t ] }
 
     else
-        ( stop1, stop2, gradient, calculateColor space stop1 stop2 t )
+        { stop1 = stop1, stop2 = stop2, gradient = gradient, palette = [ calculateColor space stop1 stop2 t ] }
 
 
 calculateColor : Space -> GradientStop -> GradientStop -> Float -> Color
@@ -160,12 +168,11 @@ type alias CosineGradientSetting =
     ( Float, Float, Float )
 
 
-calcCosine : Float -> Float -> Float -> Float -> Float -> Int
+calcCosine : Float -> Float -> Float -> Float -> Float -> Float
 calcCosine a b c d t =
     (a + b * cos (pi * 2 * (c * t + d)))
         |> clamp 0 1
         |> (*) 255
-        |> round
 
 
 calcCosineColor : CosineGradientSetting -> CosineGradientSetting -> CosineGradientSetting -> CosineGradientSetting -> Float -> Color

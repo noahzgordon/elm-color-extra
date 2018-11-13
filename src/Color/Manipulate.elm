@@ -9,7 +9,7 @@ module Color.Manipulate exposing (darken, lighten, saturate, desaturate, rotateH
 
 -}
 
-import Color exposing (Color, hsla, rgba, toHsl, toRgb)
+import Color exposing (Color, hsla, rgba, toHsla, toRgba)
 import Debug exposing (log)
 
 
@@ -24,7 +24,7 @@ darken : Float -> Color -> Color
 darken offset cl =
     let
         { hue, saturation, lightness, alpha } =
-            toHsl cl
+            toHsla cl
     in
     hsla hue saturation (limit (lightness - offset)) alpha
 
@@ -42,7 +42,7 @@ saturate : Float -> Color -> Color
 saturate offset cl =
     let
         { hue, saturation, lightness, alpha } =
-            toHsl cl
+            toHsla cl
     in
     hsla hue (limit (saturation + offset)) lightness alpha
 
@@ -67,7 +67,7 @@ fadeIn : Float -> Color -> Color
 fadeIn offset cl =
     let
         { hue, saturation, lightness, alpha } =
-            toHsl cl
+            toHsla cl
     in
     hsla hue saturation lightness (limit (alpha + offset))
 
@@ -85,7 +85,7 @@ rotateHue : Float -> Color -> Color
 rotateHue angle cl =
     let
         { hue, saturation, lightness, alpha } =
-            toHsl cl
+            toHsla cl
     in
     hsla (hue + degrees angle) saturation lightness alpha
 
@@ -95,9 +95,9 @@ rotateHue angle cl =
 That means that lightening an already-light color with `scaleHsl` won’t change the lightness much, but lightening
 a dark color by the same amount will change it more dramatically.
 
-For example, the lightness of a color can be anywhere between 0 and 1.0. If `scaleHsl (0, 0.4, 0) color` is called,
+For example, the lightness of a color can be anywhere between 0 and 1.0. If `scaleHsl { saturationScale = 0, lightnessScale = 0.4, alphaScale = 0 } color` is called,
 the resulting color’s lightness will be 40% of the way between its original lightness and 1.0. If
-`scaleHsl (0, -0.4, 0) color` is called instead, the lightness will be 40% of the way between the original
+`scaleHsl { saturationScale = 0, lightnessScale = -0.4, alphaScale = 0 } color` is called instead, the lightness will be 40% of the way between the original
 and 0.
 
 The values of the supplied tuple scale saturation, lightness, and opacity, respectively, and have a valid range of
@@ -106,14 +106,14 @@ The values of the supplied tuple scale saturation, lightness, and opacity, respe
 This function is inspired by the Sass function [scale-color](http://sass-lang.com/documentation/Sass/Script/Functions.html#scale_color-instance_method).
 
 -}
-scaleHsl : ( Float, Float, Float ) -> Color -> Color
+scaleHsl : { saturationScale : Float, lightnessScale : Float, alphaScale : Float } -> Color -> Color
 scaleHsl scaleBy color =
     let
-        ( saturationScale, lightnessScale, alphaScale ) =
+        { saturationScale, lightnessScale, alphaScale } =
             scaleBy
 
         hsl =
-            toHsl color
+            toHsla color
     in
     hsla hsl.hue
         (scale 1.0 saturationScale hsl.saturation)
@@ -126,9 +126,9 @@ scaleHsl scaleBy color =
 That means that reddening a already-red color with `scaleRgb` won’t change the redness much, but reddening a color
 with little or no red by the same amount will change it more dramatically.
 
-For example, the redness of a color can be anywhere between 0 and 255. If `scaleRgb (0.4, 0, 0, 0) color` is called,
+For example, the redness of a color can be anywhere between 0 and 255. If `scaleRgb { redScale = 0.4, greenScale = 0,  blueScale = 0, alphaScale = 0 } color` is called,
 the resulting color’s redness will be 40% of the way between its original redness and 255. If
-`scaleRgb (-0.4, 0, 0, 0) color` is called instead, the redness will be 40% of the way between the original
+`scaleRgb { redScale = -0.4, greenScale = 0, blueScale = 0, alphaScale = 0 } color` is called instead, the redness will be 40% of the way between the original
 and 0.
 
 The values of the supplied tuple scale red, green, blue, and alpha channels, respectively, and have a valid range of
@@ -137,20 +137,20 @@ The values of the supplied tuple scale red, green, blue, and alpha channels, res
 This function is inspired by the Sass function [scale-color](http://sass-lang.com/documentation/Sass/Script/Functions.html#scale_color-instance_method).
 
 -}
-scaleRgb : ( Float, Float, Float, Float ) -> Color -> Color
+scaleRgb : { redScale : Float, greenScale : Float, blueScale : Float, alphaScale : Float } -> Color -> Color
 scaleRgb scaleBy color =
     let
-        ( rScale, gScale, bScale, aScale ) =
+        { redScale, greenScale, blueScale, alphaScale } =
             scaleBy
 
         rgb =
-            toRgb color
+            toRgba color
     in
     rgba
-        (round (scale 255 rScale (toFloat rgb.red)))
-        (round (scale 255 gScale (toFloat rgb.green)))
-        (round (scale 255 bScale (toFloat rgb.blue)))
-        (scale 1.0 aScale rgb.alpha)
+        (scale 255 redScale rgb.red)
+        (scale 255 greenScale rgb.green)
+        (scale 255 blueScale rgb.blue)
+        (scale 1.0 alphaScale rgb.alpha)
 
 
 scale : Float -> Float -> Float -> Float
@@ -191,10 +191,10 @@ weightedMix color1 color2 weight =
             clamp 0 1 weight
 
         c1 =
-            toRgb color1
+            toRgba color1
 
         c2 =
-            toRgb color2
+            toRgba color2
 
         w =
             calculateWeight c1.alpha c2.alpha clampedWeight
@@ -240,6 +240,6 @@ calculateWeight a1 a2 weight =
     (w2 + 1) / 2
 
 
-mixChannel : Float -> Int -> Int -> Int
+mixChannel : Float -> Float -> Float -> Float
 mixChannel weight c1 c2 =
-    round <| toFloat c1 * weight + toFloat c2 * (1 - weight)
+    c1 * weight + c2 * (1 - weight)

@@ -11,7 +11,7 @@ Based on the [Compositing and Blending Level 1](https://www.w3.org/TR/compositin
 
 -}
 
-import Color exposing (Color, rgba, toRgb)
+import Color exposing (Color, rgba, toRgba)
 
 
 {-| The source color is multiplied by the destination color and replaces the destination.
@@ -106,10 +106,10 @@ colorBlend : (Float -> Float -> Float) -> Color -> Color -> Color
 colorBlend fn clB clS =
     let
         rgba1 =
-            toRgb clB
+            toRgba clB
 
         rgba2 =
-            toRgb clS
+            toRgba clS
 
         ar =
             rgba2.alpha + rgba1.alpha * (1 - rgba2.alpha)
@@ -123,14 +123,14 @@ colorBlend fn clB clS =
         ar
 
 
-calcChanel : (Float -> Float -> Float) -> Float -> Float -> Float -> Int -> Int -> Int
+calcChanel : (Float -> Float -> Float) -> Float -> Float -> Float -> Float -> Float -> Float
 calcChanel fn aB aS ar cB cS =
     let
         cB_ =
-            toFloat cB / 255
+            cB / 255
 
         cS_ =
-            toFloat cS / 255
+            cS / 255
 
         cr =
             fn cB_ cS_
@@ -142,7 +142,7 @@ calcChanel fn aB aS ar cB cS =
             else
                 (aS * cS_ + aB * (cB_ - aS * (cB_ + cS_ - cr))) / ar
     in
-    round (clampChannel cr_ * 255)
+    clampChannel cr_ * 255
 
 
 clampChannel : number -> number

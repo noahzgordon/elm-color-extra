@@ -35,12 +35,12 @@ colorToCssRgb : Color -> String
 colorToCssRgb cl =
     let
         { red, green, blue, alpha } =
-            toRgb cl
+            toRgba cl
     in
     cssColorString "rgb"
-        [ toString red
-        , toString green
-        , toString blue
+        [ String.fromFloat red
+        , String.fromFloat green
+        , String.fromFloat blue
         ]
 
 
@@ -53,13 +53,13 @@ colorToCssRgba : Color -> String
 colorToCssRgba cl =
     let
         { red, green, blue, alpha } =
-            toRgb cl
+            toRgba cl
     in
     cssColorString "rgba"
-        [ toString red
-        , toString green
-        , toString blue
-        , toString alpha
+        [ String.fromFloat red
+        , String.fromFloat green
+        , String.fromFloat blue
+        , String.fromFloat alpha
         ]
 
 
@@ -72,7 +72,7 @@ colorToCssHsl : Color -> String
 colorToCssHsl cl =
     let
         { hue, saturation, lightness, alpha } =
-            toHsl cl
+            toHsla cl
     in
     cssColorString "hsl"
         [ hueToString hue
@@ -90,24 +90,24 @@ colorToCssHsla : Color -> String
 colorToCssHsla cl =
     let
         { hue, saturation, lightness, alpha } =
-            toHsl cl
+            toHsla cl
     in
     cssColorString "hsla"
         [ hueToString hue
         , toPercentString saturation
         , toPercentString lightness
-        , toString alpha
+        , String.fromFloat alpha
         ]
 
 
 hueToString : Float -> String
 hueToString =
-    (*) 180 >> (\a -> (/) a pi) >> round >> toString
+    (*) 360 >> round >> String.fromInt
 
 
 toPercentString : Float -> String
 toPercentString =
-    (*) 100 >> round >> toString >> (\a -> (++) a "%")
+    (*) 100 >> round >> String.fromInt >> (\a -> (++) a "%")
 
 
 cssColorString : String -> List String -> String
@@ -139,8 +139,8 @@ hexToColor =
         extend : String -> String
         extend token =
             case String.toList token of
-                [ token ] ->
-                    String.fromList [ token, token ]
+                [ token_ ] ->
+                    String.fromList [ token_, token_ ]
 
                 _ ->
                     token
@@ -165,16 +165,16 @@ hexToColor =
                 ++ "$"
     in
     String.toLower
-        >> Regex.find (Regex.AtMost 1) (Regex.regex pattern)
-        >> List.head
+        >> (\str -> Maybe.map (\regex -> Regex.findAtMost 1 regex str) (Regex.fromString pattern))
+        >> Maybe.andThen List.head
         >> Maybe.map .submatches
         >> Maybe.map (List.filterMap identity)
         >> Result.fromMaybe "Parsing hex regex failed"
         >> Result.andThen
             (\colors ->
-                case List.map (extend >> parseIntHex) colors of
+                case List.map (extend >> parseIntHex >> Result.map toFloat) colors of
                     [ Ok r, Ok g, Ok b, Ok a ] ->
-                        Ok <| rgba r g b (roundToPlaces 2 (toFloat a / 255))
+                        Ok <| rgba r g b (roundToPlaces 2 (a / 255))
 
                     [ Ok r, Ok g, Ok b ] ->
                         Ok <| rgb r g b
@@ -211,9 +211,9 @@ colorToHex : Color -> String
 colorToHex cl =
     let
         { red, green, blue } =
-            toRgb cl
+            toRgba cl
     in
-    List.map toHex [ red, green, blue ]
+    List.map (round >> toHex) [ red, green, blue ]
         |> (::) "#"
         |> String.join ""
 
@@ -237,13 +237,13 @@ colorToHexWithAlpha : Color -> String
 colorToHexWithAlpha color =
     let
         { red, green, blue, alpha } =
-            toRgb color
+            toRgba color
     in
     if alpha == 1 then
         colorToHex color
 
     else
-        List.map toHex [ red, green, blue, round (alpha * 255) ]
+        List.map (round >> toHex) [ red, green, blue, alpha * 255 ]
             |> (::) "#"
             |> String.join ""
 
@@ -258,7 +258,7 @@ toRadix n =
     let
         getChr c =
             if c < 10 then
-                toString c
+                String.fromInt c
 
             else
                 String.fromChar <| Char.fromCode (87 + c)
@@ -283,7 +283,7 @@ colorToXyz cl =
         c ch =
             let
                 ch_ =
-                    toFloat ch / 255
+                    ch / 255
 
                 ch__ =
                     if ch_ > 4.045e-2 then
@@ -295,7 +295,7 @@ colorToXyz cl =
             ch__ * 100
 
         { red, green, blue } =
-            toRgb cl
+            toRgba cl
 
         r =
             c red
@@ -397,6 +397,6 @@ xyzToColor { x, y, z } =
                     else
                         12.92 * ch
             in
-            round <| clamp 0 255 (ch_ * 255)
+            clamp 0 255 (ch_ * 255)
     in
     rgb (c r) (c g) (c b)

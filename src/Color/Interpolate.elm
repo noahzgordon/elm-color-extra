@@ -11,7 +11,7 @@ Interpolate between two colors
 
 -}
 
-import Color exposing (Color, hsla, rgba, toHsl, toRgb)
+import Color exposing (Color, hsla, rgba, toHsla, toRgba)
 import Color.Convert exposing (colorToLab, labToColor)
 
 
@@ -45,23 +45,23 @@ interpolate space cl1 cl2 t =
         RGB ->
             let
                 cl1_ =
-                    toRgb cl1
+                    toRgba cl1
 
                 cl2_ =
-                    toRgb cl2
+                    toRgba cl2
             in
-            rgba (round (i (toFloat cl1_.red) (toFloat cl2_.red)))
-                (round (i (toFloat cl1_.green) (toFloat cl2_.green)))
-                (round (i (toFloat cl1_.blue) (toFloat cl2_.blue)))
+            rgba (i cl1_.red cl2_.red)
+                (i cl1_.green cl2_.green)
+                (i cl1_.blue cl2_.blue)
                 (i cl1_.alpha cl2_.alpha)
 
         HSL ->
             let
                 cl1_ =
-                    toHsl cl1
+                    toHsla cl1
 
                 cl2_ =
-                    toHsl cl2
+                    toHsla cl2
 
                 h1 =
                     cl1_.hue
