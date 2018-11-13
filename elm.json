@@ -1,6 +1,6 @@
 {
     "type": "package",
-    "name": "eskimoblood/elm-color-extra",
+    "name": "noahzgordon/elm-color-extra",
     "summary": "Additional color handling for Elm",
     "license": "BSD-3-Clause",
     "version": "6.0.0",
