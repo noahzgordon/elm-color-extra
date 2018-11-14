@@ -127,10 +127,10 @@ calcChanel : (Float -> Float -> Float) -> Float -> Float -> Float -> Float -> Fl
 calcChanel fn aB aS ar cB cS =
     let
         cB_ =
-            cB / 255
+            cB
 
         cS_ =
-            cS / 255
+            cS
 
         cr =
             fn cB_ cS_
@@ -142,7 +142,7 @@ calcChanel fn aB aS ar cB cS =
             else
                 (aS * cS_ + aB * (cB_ - aS * (cB_ + cS_ - cr))) / ar
     in
-    clampChannel cr_ * 255
+    clampChannel cr_
 
 
 clampChannel : number -> number

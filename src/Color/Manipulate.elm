@@ -147,9 +147,9 @@ scaleRgb scaleBy color =
             toRgba color
     in
     rgba
-        (scale 255 redScale rgb.red)
-        (scale 255 greenScale rgb.green)
-        (scale 255 blueScale rgb.blue)
+        (scale 1.0 redScale rgb.red)
+        (scale 1.0 greenScale rgb.green)
+        (scale 1.0 blueScale rgb.blue)
         (scale 1.0 alphaScale rgb.alpha)
 
 

@@ -38,9 +38,9 @@ colorToCssRgb cl =
             toRgba cl
     in
     cssColorString "rgb"
-        [ String.fromFloat red
-        , String.fromFloat green
-        , String.fromFloat blue
+        [ String.fromFloat (red * 255)
+        , String.fromFloat (green * 255)
+        , String.fromFloat (blue * 255)
         ]
 
 
@@ -56,9 +56,9 @@ colorToCssRgba cl =
             toRgba cl
     in
     cssColorString "rgba"
-        [ String.fromFloat red
-        , String.fromFloat green
-        , String.fromFloat blue
+        [ String.fromFloat (red * 255)
+        , String.fromFloat (green * 255)
+        , String.fromFloat (blue * 255)
         , String.fromFloat alpha
         ]
 
@@ -174,10 +174,10 @@ hexToColor =
             (\colors ->
                 case List.map (extend >> parseIntHex >> Result.map toFloat) colors of
                     [ Ok r, Ok g, Ok b, Ok a ] ->
-                        Ok <| rgba r g b (roundToPlaces 2 (a / 255))
+                        Ok <| rgba (r / 255) (g / 255) (b / 255) (roundToPlaces 2 (a / 255))
 
                     [ Ok r, Ok g, Ok b ] ->
-                        Ok <| rgb r g b
+                        Ok <| rgb (r / 255) (g / 255) (b / 255)
 
                     _ ->
                         -- there could be more descriptive error cases per channel
@@ -213,7 +213,7 @@ colorToHex cl =
         { red, green, blue } =
             toRgba cl
     in
-    List.map (round >> toHex) [ red, green, blue ]
+    List.map (round >> toHex) [ red * 255, green * 255, blue * 255 ]
         |> (::) "#"
         |> String.join ""
 
@@ -243,7 +243,7 @@ colorToHexWithAlpha color =
         colorToHex color
 
     else
-        List.map (round >> toHex) [ red, green, blue, alpha * 255 ]
+        List.map (round >> toHex) [ red * 255, green * 255, blue * 255, alpha * 255 ]
             |> (::) "#"
             |> String.join ""
 
@@ -283,16 +283,13 @@ colorToXyz cl =
         c ch =
             let
                 ch_ =
-                    ch / 255
-
-                ch__ =
-                    if ch_ > 4.045e-2 then
-                        ((ch_ + 5.5e-2) / 1.055) ^ 2.4
+                    if ch > 4.045e-2 then
+                        ((ch + 5.5e-2) / 1.055) ^ 2.4
 
                     else
-                        ch_ / 12.92
+                        ch / 12.92
             in
-            ch__ * 100
+            ch_ * 100
 
         { red, green, blue } =
             toRgba cl
@@ -397,6 +394,6 @@ xyzToColor { x, y, z } =
                     else
                         12.92 * ch
             in
-            clamp 0 255 (ch_ * 255)
+            clamp 0 1 ch_
     in
     rgb (c r) (c g) (c b)

@@ -1,6 +1,6 @@
 module Tests exposing (accessibility, blending, c1, c2, convert, gradient, interpolation, lab1, manipulate, p1, p1Result, p2, p2Result)
 
-import Color exposing (Color, hsl, hsla, rgb, rgba, toRgba)
+import Color exposing (Color, hsl, hsla, toRgba)
 import Color.Accessibility exposing (..)
 import Color.Blending as Ble exposing (..)
 import Color.Convert exposing (..)
@@ -9,6 +9,16 @@ import Color.Interpolate as Int exposing (..)
 import Color.Manipulate as Man exposing (..)
 import Expect exposing (Expectation, FloatingPointTolerance(..))
 import Test exposing (..)
+
+
+rgb : Float -> Float -> Float -> Color
+rgb r g b =
+    Color.rgb (r / 255) (g / 255) (b / 255)
+
+
+rgba : Float -> Float -> Float -> Float -> Color
+rgba r g b a =
+    Color.rgba (r / 255) (g / 255) (b / 255) a
 
 
 accessibility : Test
@@ -157,27 +167,28 @@ manipulate =
         , test "Scale alpha with negative value" <|
             expectColorSimilarity (hsla (1 / 3) 0.3 0.9 0.86)
                 (scaleHsl { saturationScale = 0, lightnessScale = 0, alphaScale = -0.14 } (hsl (1 / 3) 0.3 0.9))
-        , test "Scale red channel with positive value" <| \() -> Expect.equal (rgb 186.4 20 30) (scaleRgb { redScale = 0.3, greenScale = 0, blueScale = 0, alphaScale = 0 } (rgb 157 20 30))
-        , test "Scale red channel with negative value" <| \() -> Expect.equal (rgb 109.9 20 30) (scaleRgb { redScale = -0.3, greenScale = 0, blueScale = 0, alphaScale = 0 } (rgb 157 20 30))
-        , test "Scale green channel with positive value" <| \() -> Expect.equal (rgb 157 55.25 30) (scaleRgb { redScale = 0, greenScale = 0.15, blueScale = 0, alphaScale = 0 } (rgb 157 20 30))
-        , test "Scale green channel with negative value" <| \() -> Expect.equal (rgb 157 17 30) (scaleRgb { redScale = 0, greenScale = -0.15, blueScale = 0, alphaScale = 0 } (rgb 157 20 30))
-        , test "Scale blue channel with positive value" <| \() -> Expect.equal (rgb 157 20 61.5) (scaleRgb { redScale = 0, greenScale = 0, blueScale = 0.14, alphaScale = 0 } (rgb 157 20 30))
-        , test "Scale blue channel with negative value" <| \() -> Expect.equal (rgb 157 20 25.8) (scaleRgb { redScale = 0, greenScale = 0, blueScale = -0.14, alphaScale = 0 } (rgb 157 20 30))
-        , test "Scale alpha channel with positive value" <| \() -> Expect.equal (rgba 157 20 30 0.6) (scaleRgb { redScale = 0, greenScale = 0, blueScale = 0, alphaScale = 0.2 } (rgba 157 20 30 0.5))
-        , test "Scale alpha channel with negative value" <| \() -> Expect.equal (rgba 157 20 30 0.4) (scaleRgb { redScale = 0, greenScale = 0, blueScale = 0, alphaScale = -0.2 } (rgba 157 20 30 0.5))
-        , test "Mix 1" <| \() -> Expect.equal (rgb 127.5 0 127.5) (mix (rgb 255 0 0) (rgb 0 0 255))
-        , test "Mix 2" <| \() -> Expect.equal (rgb 127.5 127.5 127.5) (mix (rgb 255 255 0) (rgb 0 0 255))
-        , test "Mix 3" <| \() -> Expect.equal (rgb 127.5 144.5 85) (mix (rgb 255 119 0) (rgb 0 170 170))
-        , test "Mix 4" <| \() -> Expect.equal (rgb 63.75 0 191.25) (weightedMix (rgb 255 0 0) (rgb 0 0 255) 0.25)
-        , test "Mix 5" <| \() -> Expect.equal (rgba 63.75 0 191.25 0.75) (mix (rgba 255 0 0 0.5) (rgb 0 0 255))
-        , test "Mix 6" <| \() -> Expect.equal (rgb 255 0 0) (weightedMix (rgb 255 0 0) (rgb 0 0 255) 1)
-        , test "Mix 7" <| \() -> Expect.equal (rgb 0 0 255) (weightedMix (rgb 255 0 0) (rgb 0 0 255) 0)
-        , test "Mix 8" <| \() -> Expect.equal (rgba 255 0 0 0.5) (mix (rgb 255 0 0) (rgba 0 0 255 0))
-        , test "Mix 9" <| \() -> Expect.equal (rgba 0 0 255 0.5) (mix (rgba 255 0 0 0) (rgb 0 0 255))
-        , test "Mix 10" <| \() -> Expect.equal (rgb 255 0 0) (weightedMix (rgb 255 0 0) (rgba 0 0 255 0) 1)
-        , test "Mix 11" <| \() -> Expect.equal (rgb 0 0 255) (weightedMix (rgba 255 0 0 0) (rgb 0 0 255) 0)
-        , test "Mix 12" <| \() -> Expect.equal (rgba 0 0 255 0) (weightedMix (rgb 255 0 0) (rgba 0 0 255 0) 0)
-        , test "Mix 13" <| \() -> Expect.equal (rgba 255 0 0 0) (weightedMix (rgba 255 0 0 0) (rgb 0 0 255) 1)
+        , test "Scale red channel with positive value" <|
+            expectColorSimilarity (rgb 186.4 20 30) (scaleRgb { redScale = 0.3, greenScale = 0, blueScale = 0, alphaScale = 0 } (rgb 157 20 30))
+        , test "Scale red channel with negative value" <| expectColorSimilarity (rgb 109.9 20 30) (scaleRgb { redScale = -0.3, greenScale = 0, blueScale = 0, alphaScale = 0 } (rgb 157 20 30))
+        , test "Scale green channel with positive value" <| expectColorSimilarity (rgb 157 55.25 30) (scaleRgb { redScale = 0, greenScale = 0.15, blueScale = 0, alphaScale = 0 } (rgb 157 20 30))
+        , test "Scale green channel with negative value" <| expectColorSimilarity (rgb 157 17 30) (scaleRgb { redScale = 0, greenScale = -0.15, blueScale = 0, alphaScale = 0 } (rgb 157 20 30))
+        , test "Scale blue channel with positive value" <| expectColorSimilarity (rgb 157 20 61.5) (scaleRgb { redScale = 0, greenScale = 0, blueScale = 0.14, alphaScale = 0 } (rgb 157 20 30))
+        , test "Scale blue channel with negative value" <| expectColorSimilarity (rgb 157 20 25.8) (scaleRgb { redScale = 0, greenScale = 0, blueScale = -0.14, alphaScale = 0 } (rgb 157 20 30))
+        , test "Scale alpha channel with positive value" <| expectColorSimilarity (rgba 157 20 30 0.6) (scaleRgb { redScale = 0, greenScale = 0, blueScale = 0, alphaScale = 0.2 } (rgba 157 20 30 0.5))
+        , test "Scale alpha channel with negative value" <| expectColorSimilarity (rgba 157 20 30 0.4) (scaleRgb { redScale = 0, greenScale = 0, blueScale = 0, alphaScale = -0.2 } (rgba 157 20 30 0.5))
+        , test "Mix 1" <| expectColorSimilarity (rgb 127.5 0 127.5) (mix (rgb 255 0 0) (rgb 0 0 255))
+        , test "Mix 2" <| expectColorSimilarity (rgb 127.5 127.5 127.5) (mix (rgb 255 255 0) (rgb 0 0 255))
+        , test "Mix 3" <| expectColorSimilarity (rgb 127.5 144.5 85) (mix (rgb 255 119 0) (rgb 0 170 170))
+        , test "Mix 4" <| expectColorSimilarity (rgb 63.75 0 191.25) (weightedMix (rgb 255 0 0) (rgb 0 0 255) 0.25)
+        , test "Mix 5" <| expectColorSimilarity (rgba 63.75 0 191.25 0.75) (mix (rgba 255 0 0 0.5) (rgb 0 0 255))
+        , test "Mix 6" <| expectColorSimilarity (rgb 255 0 0) (weightedMix (rgb 255 0 0) (rgb 0 0 255) 1)
+        , test "Mix 7" <| expectColorSimilarity (rgb 0 0 255) (weightedMix (rgb 255 0 0) (rgb 0 0 255) 0)
+        , test "Mix 8" <| expectColorSimilarity (rgba 255 0 0 0.5) (mix (rgb 255 0 0) (rgba 0 0 255 0))
+        , test "Mix 9" <| expectColorSimilarity (rgba 0 0 255 0.5) (mix (rgba 255 0 0 0) (rgb 0 0 255))
+        , test "Mix 10" <| expectColorSimilarity (rgb 255 0 0) (weightedMix (rgb 255 0 0) (rgba 0 0 255 0) 1)
+        , test "Mix 11" <| expectColorSimilarity (rgb 0 0 255) (weightedMix (rgba 255 0 0 0) (rgb 0 0 255) 0)
+        , test "Mix 12" <| expectColorSimilarity (rgba 0 0 255 0) (weightedMix (rgb 255 0 0) (rgba 0 0 255 0) 0)
+        , test "Mix 13" <| expectColorSimilarity (rgba 255 0 0 0) (weightedMix (rgba 255 0 0 0) (rgb 0 0 255) 1)
         ]
 
 
