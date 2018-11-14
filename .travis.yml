@@ -6,6 +6,7 @@ node_js:
 cache:
   directories:
     - elm-stuff/
+    - /home/travis/.elm
 
 before_install:
   - if [ ${TRAVIS_OS_NAME} == "osx" ];
