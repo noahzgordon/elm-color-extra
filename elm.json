@@ -3,7 +3,7 @@
     "name": "noahzgordon/elm-color-extra",
     "summary": "Additional color handling for Elm",
     "license": "MIT",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "exposed-modules": [
         "Color.Accessibility",
         "Color.Manipulate",
