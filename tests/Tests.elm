@@ -53,12 +53,12 @@ accessibility =
             \() ->
                 Expect.equal
                     (maximumContrast Color.yellow
-                        [ Color.white
-                        , Color.darkBlue
+                        Color.white
+                        [ Color.darkBlue
                         , Color.green
                         ]
                     )
-                    (Just Color.darkBlue)
+                    Color.darkBlue
         ]
 
 

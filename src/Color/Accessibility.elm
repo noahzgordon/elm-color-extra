@@ -68,18 +68,27 @@ luminance cl =
 
 {-| Returns the color with the highest contrast to the base color.
 
-    bgColor = Color.darkBlue
-    textOptions = [ Color.white, Color.purple, Color.black ]
-
-    maximumContrast bgColor textOptions -- Just Color.white
+    maximumContrast Color.darkBlue Color.white [ Color.purple, Color.black ] -- Color.white
 
 -}
-maximumContrast : Color -> List Color -> Maybe Color
-maximumContrast base options =
-    let
-        compareContrast c1 c2 =
-            compare (contrastRatio base c2) (contrastRatio base c1)
-    in
-    options
-        |> List.sortWith compareContrast
-        |> List.head
+maximumContrast : Color -> Color -> List Color -> Color
+maximumContrast base first rest =
+    maximumContrastMemo (contrastRatio base) (contrastRatio base first) first rest
+
+
+maximumContrastMemo : (Color -> Float) -> Float -> Color -> List Color -> Color
+maximumContrastMemo ratioFn bestRatio bestColor colors =
+    case colors of
+        [] ->
+            bestColor
+
+        color :: rest ->
+            let
+                newRatio =
+                    ratioFn color
+            in
+            if bestRatio >= newRatio then
+                maximumContrastMemo ratioFn bestRatio bestColor rest
+
+            else
+                maximumContrastMemo ratioFn newRatio color rest
